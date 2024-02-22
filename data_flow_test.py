@@ -45,6 +45,36 @@ if st.button('Submit') and item and amount:
     db.accounting.insert_one({'DateTime': dt, 'Item': item, 'Amount': amount, 'User': user})
     st.write('Submitted')
 
+@st.cache_data(ttl=600)
+def get_summary(user):
+    db = client.dev
+    items = db.accounting.aggregate(
+        [
+            {"$match": {"User": user}},
+            {
+                "$project": {
+                    "date": {
+                        "$dateToString": {
+                            "format": "%Y-%m",
+                            "date": {"$toDate": "$DateTime"},
+                        }
+                    },
+                    "Amount": 1,
+                }
+            },
+            {"$group": {"_id": "$date", "totalAmount": {"$sum": "$Amount"}}},
+            {"$sort": {"_id": 1}},
+        ]
+    )
+    items = list(items)
+    if items:
+        return DataFrame(items)
+    else:
+        return DataFrame(items)
+
+summary = get_summary(user)
+st.line_chart(summary, x='_id', y='totalAmount')
+st.table(summary)
+
 items = get_data(user)
 st.table(items)
-
