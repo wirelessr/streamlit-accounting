@@ -13,9 +13,9 @@ def init_connection():
 
 client = init_connection()
 
-def get_data(name):
+def get_data(name, limit=10):
     db = client.dev
-    items = db.accounting.find({'User': name}).sort('_id', -1)
+    items = db.accounting.find({'User': name}).sort('_id', -1).limit(limit)
     items = list(items)
     if items:
         return DataFrame(items).drop(columns=['_id'])
@@ -46,8 +46,12 @@ if st.button('Submit') and item and amount:
     st.write('Submitted')
 
 @st.cache_data(ttl=600)
-def get_summary(user):
+def get_summary(user, aggr='Monthly', limit=20):
     db = client.dev
+    if aggr == 'Daily':
+        fmt = '%Y-%m-%d'
+    else:
+        fmt = '%Y-%m'
     items = db.accounting.aggregate(
         [
             {"$match": {"User": user}},
@@ -55,7 +59,7 @@ def get_summary(user):
                 "$project": {
                     "date": {
                         "$dateToString": {
-                            "format": "%Y-%m",
+                            "format": fmt,
                             "date": {"$toDate": "$DateTime"},
                         }
                     },
@@ -64,6 +68,7 @@ def get_summary(user):
             },
             {"$group": {"_id": "$date", "totalAmount": {"$sum": "$Amount"}}},
             {"$sort": {"_id": 1}},
+            {"$limit": limit},
         ]
     )
     items = list(items)
@@ -72,7 +77,8 @@ def get_summary(user):
     else:
         return DataFrame(items)
 
-summary = get_summary(user)
+aggr = st.radio("Aggregation", ['Monthly', 'Daily'], horizontal=True)
+summary = get_summary(user, aggr)
 st.line_chart(summary, x='_id', y='totalAmount')
 st.table(summary)
 
