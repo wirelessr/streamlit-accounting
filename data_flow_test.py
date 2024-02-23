@@ -13,6 +13,7 @@ def init_connection():
 
 client = init_connection()
 
+@st.cache_data(ttl=600)
 def get_data(name, limit=10):
     db = client.dev
     items = db.accounting.find({'User': name}).sort('_id', -1).limit(limit)
@@ -22,28 +23,12 @@ def get_data(name, limit=10):
     else:
         return DataFrame(items)
 
-# Pull data from the collection.
-# Uses st.cache_data to only rerun when the query changes or after 10 min.
 @st.cache_data(ttl=600)
 def get_user():
     db = client.dev
     users = db.user.find().sort('_id', -1)
     users = [x['name'] for x in users]
     return users
-
-user = st.selectbox('User', get_user())
-
-d = st.date_input('Date')
-t = st.time_input('Time')
-item = st.text_input('Item')
-amount = int(st.number_input('Amount', step=1))
-
-dt = datetime.combine(d, t)
-
-if st.button('Submit') and item and amount:
-    db = client.dev
-    db.accounting.insert_one({'DateTime': dt, 'Item': item, 'Amount': amount, 'User': user})
-    st.write('Submitted')
 
 @st.cache_data(ttl=600)
 def get_summary(user, aggr='Monthly', limit=20):
@@ -72,10 +57,25 @@ def get_summary(user, aggr='Monthly', limit=20):
         ]
     )
     items = list(items)
-    if items:
-        return DataFrame(items)
-    else:
-        return DataFrame(items)
+    return DataFrame(items)
+
+user = st.selectbox('User', get_user())
+
+d = st.date_input('Date')
+t = st.time_input('Time')
+item = st.text_input('Item')
+amount = int(st.number_input('Amount', step=1))
+
+dt = datetime.combine(d, t)
+
+if st.button('Submit') and item and amount:
+    db = client.dev
+    db.accounting.insert_one({'DateTime': dt, 'Item': item, 'Amount': amount, 'User': user})
+    st.write('Submitted')
+    # Clear cache
+    get_data.clear()
+    get_summary.clear()
+
 
 aggr = st.radio("Aggregation", ['Monthly', 'Daily'], horizontal=True)
 summary = get_summary(user, aggr)
