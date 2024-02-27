@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import streamlit as st
 import matplotlib.pyplot as plt
@@ -62,11 +62,16 @@ def get_summary(user, aggr='Monthly', limit=20):
     return DataFrame(items)
 
 @st.cache_data(ttl=600)
-def get_ratio(user):
+def get_ratio(user, last_days=60):
     db = client.dev
+    start_date = datetime.now() - timedelta(days=last_days)
     items = db.accounting.aggregate(
         [
-            {"$match": {"User": user}},
+            {"$match": {
+                "User": user,
+                "DateTime": {"$gte": start_date}
+                }
+            },
             {
                 "$project": {
                     "Item": 1,
@@ -102,7 +107,7 @@ aggr = st.radio("Aggregation", ['Monthly', 'Daily'], horizontal=True)
 summary = get_summary(user, aggr)
 st.line_chart(summary, x='_id', y='totalAmount')
 
-if st.toggle('Pie Chart'):
+if st.toggle('Pie Chart for Last 60 Days'):
     ratio = get_ratio(user)
     use_font('Noto Sans CJK JP')
     fig, ax = plt.subplots()
