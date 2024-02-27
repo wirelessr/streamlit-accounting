@@ -61,6 +61,7 @@ def get_summary(user, aggr='Monthly', limit=20):
     items = list(items)
     return DataFrame(items)
 
+@st.cache_data(ttl=600)
 def get_ratio(user):
     db = client.dev
     items = db.accounting.aggregate(
@@ -101,11 +102,12 @@ aggr = st.radio("Aggregation", ['Monthly', 'Daily'], horizontal=True)
 summary = get_summary(user, aggr)
 st.line_chart(summary, x='_id', y='totalAmount')
 
-ratio = get_ratio(user)
-use_font('Noto Sans CJK SC')
-fig, ax = plt.subplots()
-ax.pie(ratio['totalAmount'], labels=ratio['_id'], autopct='%1.1f%%')
-st.pyplot(fig)
+if st.toggle('Pie Chart'):
+    ratio = get_ratio(user)
+    use_font('Noto Sans CJK SC')
+    fig, ax = plt.subplots()
+    ax.pie(ratio['totalAmount'], labels=ratio['_id'], autopct='%1.1f%%')
+    st.pyplot(fig)
 
 items = get_data(user)
 st.table(items)
