@@ -1,9 +1,11 @@
 from datetime import datetime
 
 import streamlit as st
+import matplotlib.pyplot as plt
 import pymongo
 from pymongo.server_api import ServerApi
 from pandas import DataFrame
+from mplfonts import use_font
 
 # Initialize connection.
 # Uses st.cache_resource to only run once.
@@ -59,6 +61,24 @@ def get_summary(user, aggr='Monthly', limit=20):
     items = list(items)
     return DataFrame(items)
 
+def get_ratio(user):
+    db = client.dev
+    items = db.accounting.aggregate(
+        [
+            {"$match": {"User": user}},
+            {
+                "$project": {
+                    "Item": 1,
+                    "Amount": 1,
+                }
+            },
+            {"$group": {"_id": "$Item", "totalAmount": {"$sum": "$Amount"}}},
+            {"$sort": {"_id": 1}},
+        ]
+    )
+    items = list(items)
+    return DataFrame(items)
+
 user = st.selectbox('User', get_user())
 
 d = st.date_input('Date')
@@ -80,7 +100,12 @@ if st.button('Submit') and item and amount:
 aggr = st.radio("Aggregation", ['Monthly', 'Daily'], horizontal=True)
 summary = get_summary(user, aggr)
 st.line_chart(summary, x='_id', y='totalAmount')
-st.table(summary)
+
+ratio = get_ratio(user)
+use_font('Noto Sans CJK SC')
+fig, ax = plt.subplots()
+ax.pie(ratio['totalAmount'], labels=ratio['_id'], autopct='%1.1f%%')
+st.pyplot(fig)
 
 items = get_data(user)
 st.table(items)
