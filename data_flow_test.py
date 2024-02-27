@@ -104,7 +104,7 @@ st.line_chart(summary, x='_id', y='totalAmount')
 
 if st.toggle('Pie Chart'):
     ratio = get_ratio(user)
-    use_font('Noto Sans CJK SC')
+    use_font('Noto Sans CJK JP')
     fig, ax = plt.subplots()
     ax.pie(ratio['totalAmount'], labels=ratio['_id'], autopct='%1.1f%%')
     st.pyplot(fig)
