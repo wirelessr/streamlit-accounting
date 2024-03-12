@@ -103,10 +103,24 @@ if st.button('Submit') and item and amount:
     get_summary.clear()
 
 
+# 折線圖匯總
 aggr = st.radio("Aggregation", ['Monthly', 'Daily'], horizontal=True)
 summary = get_summary(user, aggr)
-st.line_chart(summary, x='_id', y='totalAmount')
+#st.line_chart(summary, x='_id', y='totalAmount')
 
+dates = summary['_id']
+amounts = summary['totalAmount']
+fig, ax = plt.subplots()
+ax.plot(dates, amounts, marker='o', linestyle='-')
+for i, txt in enumerate(amounts):
+    ax.annotate(txt, (dates[i], amounts[i]), textcoords="offset points", xytext=(0, 10), ha='center')
+
+ax.set_title(f'{aggr} Total Amount')
+ax.set_ylabel('Total Amount')
+ax.tick_params(axis='x', rotation=45)
+st.pyplot(fig)
+
+# 分類圓餅圖
 if st.toggle('Pie Chart for Last 60 Days'):
     ratio = get_ratio(user)
     use_font('Noto Sans CJK JP')
@@ -114,5 +128,6 @@ if st.toggle('Pie Chart for Last 60 Days'):
     ax.pie(ratio['totalAmount'], labels=ratio['_id'], autopct='%1.1f%%')
     st.pyplot(fig)
 
+# 近期消費表
 items = get_data(user)
 st.table(items)
