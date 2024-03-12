@@ -100,8 +100,7 @@ if st.button('Submit') and item and amount:
     db.accounting.insert_one({'DateTime': dt, 'Item': item, 'Amount': amount, 'User': user})
     st.write('Submitted')
     # Clear cache
-    get_data.clear()
-    get_summary.clear()
+    st.cache_data.clear()
 
 # 設定CJK font
 fonts = fontManager.get_font_names()
