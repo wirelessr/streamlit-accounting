@@ -125,7 +125,10 @@ if st.toggle('Pie Chart for Last 60 Days'):
     ratio = get_ratio(user)
     use_font('Noto Sans CJK JP')
     fig, ax = plt.subplots()
-    ax.pie(ratio['totalAmount'], labels=ratio['_id'], autopct='%1.1f%%')
+    amounts = ratio['totalAmount']
+    items = ratio['_id']
+    labels = [f'{items[i]}: {amounts[i]}' for i in range(len(items))] 
+    ax.pie(amounts, labels=labels, autopct='%1.1f%%')
     st.pyplot(fig)
 
 # 近期消費表
