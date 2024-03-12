@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 import streamlit as st
 import matplotlib.pyplot as plt
+from matplotlib.font_manager import fontManager
 import pymongo
 from pymongo.server_api import ServerApi
 from pandas import DataFrame
@@ -102,6 +103,12 @@ if st.button('Submit') and item and amount:
     get_data.clear()
     get_summary.clear()
 
+# 設定CJK font
+fonts = fontManager.get_font_names()
+for font in fonts:
+    if 'CJK' in font:
+        use_font(font)
+        break
 
 # 折線圖匯總
 aggr = st.radio("Aggregation", ['Monthly', 'Daily'], horizontal=True)
@@ -123,7 +130,6 @@ st.pyplot(fig)
 # 分類圓餅圖
 if st.toggle('Pie Chart for Last 60 Days'):
     ratio = get_ratio(user)
-    use_font('Noto Sans CJK JP')
     fig, ax = plt.subplots()
     amounts = ratio['totalAmount']
     items = ratio['_id']
