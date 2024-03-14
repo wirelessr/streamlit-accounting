@@ -19,12 +19,9 @@ client = init_connection()
 @st.cache_data(ttl=600)
 def get_data(name, limit=10):
     db = client.dev
-    items = db.accounting.find({'User': name}).sort('_id', -1).limit(limit)
+    items = db.accounting.find({'User': name}, {'_id': 0, 'Category': 0}).sort('_id', -1).limit(limit)
     items = list(items)
-    if items:
-        return DataFrame(items).drop(columns=['_id'])
-    else:
-        return DataFrame(items)
+    return DataFrame(items)
 
 @st.cache_data(ttl=600)
 def get_user():
@@ -63,7 +60,7 @@ def get_summary(user, aggr='Monthly', limit=20):
     return DataFrame(items)
 
 @st.cache_data(ttl=600)
-def get_ratio(user, last_days=60):
+def get_ratio(user, group='Item', last_days=60):
     db = client.dev
     start_date = datetime.now() - timedelta(days=last_days)
     items = db.accounting.aggregate(
@@ -75,11 +72,11 @@ def get_ratio(user, last_days=60):
             },
             {
                 "$project": {
-                    "Item": 1,
+                    group: 1,
                     "Amount": 1,
                 }
             },
-            {"$group": {"_id": "$Item", "totalAmount": {"$sum": "$Amount"}}},
+            {"$group": {"_id": f"${group}", "totalAmount": {"$sum": "$Amount"}}},
             {"$sort": {"_id": 1}},
         ]
     )
@@ -92,12 +89,13 @@ d = st.date_input('Date')
 t = st.time_input('Time')
 item = st.text_input('Item')
 amount = int(st.number_input('Amount', step=1))
+category = st.selectbox('Category', ['無', '食物', '交通', '娛樂', '雜項'])
 
 dt = datetime.combine(d, t)
 
 if st.button('Submit') and item and amount:
     db = client.dev
-    db.accounting.insert_one({'DateTime': dt, 'Item': item, 'Amount': amount, 'User': user})
+    db.accounting.insert_one({'DateTime': dt, 'Item': item, 'Amount': amount, 'User': user, 'Category': category})
     st.write('Submitted')
     # Clear cache
     st.cache_data.clear()
@@ -128,7 +126,8 @@ st.pyplot(fig)
 
 # 分類圓餅圖
 if st.toggle('Pie Chart for Last 60 Days'):
-    ratio = get_ratio(user)
+    group = st.radio('Group by', ['Item', 'Category'], horizontal=True)
+    ratio = get_ratio(user, group)
     fig, ax = plt.subplots()
     amounts = ratio['totalAmount']
     items = ratio['_id']
