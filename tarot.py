@@ -4,8 +4,9 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 
-
+# Classic Spreads
 cols = st.columns(3)
+cols = [x.empty() for x in cols]
 
 files = os.listdir('./big')
 files = [x for x in files if '_' not in x]
@@ -30,6 +31,10 @@ def pick_one():
     return img[img_idx]
 
 for col in cols:
-    img = pick_one()
-    col.image(img)
+    col.image('./cover_back.png')
+
+if st.button('Go', use_container_width=True):
+    for col in cols:
+        img = pick_one()
+        col.image(img)
 
